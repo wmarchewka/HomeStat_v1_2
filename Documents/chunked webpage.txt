@@ -1,0 +1,11 @@
+webServer.sendHeader("Cache-Control",` "no-cache, no-store, must-revalidate");
+webServer.sendHeader("Pragma", "no-cache");
+webServer.sendHeader("Expires", "-1");
+webServer.setContentLength(CONTENT_LENGTH_UNKNOWN);
+// here begin chunked transfer
+webServer.send(200, "text/html", "");
+webServer.sendContent(F("<html><head>")); // here can be for example your first big string
+// ... here you send line-by-line html formatted line from SPIFFS file
+webServer.sendContent(F("</body></html>")); // html closing
+webServer.sendContent(F("")); // this tells web client that transfer is done
+webServer.client().stop();

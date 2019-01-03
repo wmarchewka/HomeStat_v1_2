@@ -1,0 +1,85 @@
+String webData = "";
+webData += "LightSensor=";
+webData += String(glb_lightSensor);
+webData += "\n";
+webData += "Temp&Humidity Status=";
+webData += String(glb_dhtStatusError);
+webData += "\n";
+webData += "Humidity=";
+webData += String(glb_humidity);
+webData += "\n";
+webData += "Temperature=";
+webData += String(glb_temperature);
+glb_ipAddress = WiFi.localIP();
+webData += "\n";
+webData += "WiFi Status=";
+webData += String(WiFi.status());
+webData += "\n";
+webData += "IP=";
+webData += String(glb_ipAddress);
+webData += "\n";
+webData += "Heat duration=";
+webData += String(glb_heatPulseDuration);
+webData += "\n";
+webData += ("Cool duration=");
+webData += String(glb_coolPulseDuration);
+webData += "\n";
+webData += ("Fan duration=");
+webData += String(glb_fanPulseDuration);
+webData += "\n";
+webData += ("Thermostat Status=");
+webData += String(glb_thermostatStatus);
+webData += "\n";
+webData += ("Error Code:");
+webData += String(glb_BlinkErrorCode);
+webData += "\n";
+webData += "Coils=";
+for (int x = 23; x > 15; x--)
+{
+  webData += String(mb.Coil(x));
+}
+webData += " ";
+for (int x = 15; x > 7; x--)
+{
+  webData += String(mb.Coil(x));
+}
+webData += (" ");
+for (int x = 7; x >= 0; x--)
+{
+  webData += String(mb.Coil(x));
+}
+webData += ("\n");
+
+webData += "PINS=";
+for (int x = 23; x > 15; x--)
+{
+  webData += String(digitalRead(x));
+}
+webData += " ";
+for (int x = 15; x > 7; x--)
+{
+  webData += String(digitalRead(x));
+}
+webData += " ";
+for (int x = 7; x >= 0; x--)
+{
+  webData += String(digitalRead(x));
+}
+webData += "\n";
+
+for (int x = 1; x <= glb_maxCoilSize - 1; x++)
+{
+  webData += "Modbus coil ";
+  webData += String(x);
+  webData += " value:";
+  int val = mb.Coil(x);
+  webData += String(val);
+  webData += "\t\t\t";
+  webData += "Modbus hReg ";
+  webData += String(x);
+  webData += " value:";
+  val = mb.Hreg(x);
+  webData += String(val);
+  webData += "\n";
+}
+Serial.println("Here");

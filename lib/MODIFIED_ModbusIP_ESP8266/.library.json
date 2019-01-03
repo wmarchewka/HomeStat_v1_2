@@ -1,0 +1,43 @@
+{
+    "license": "BSD-3-Clause", 
+    "name": "ModbusIP_ESP8266", 
+    "repository": {
+        "url": "https://github.com/vermut/arduino-ModbusIP_ESP8266.git", 
+        "type": "git"
+    }, 
+    "platforms": [
+        "espressif8266"
+    ], 
+    "frameworks": [
+        "arduino"
+    ], 
+    "dependencies": [
+        {
+            "name": "Modbus"
+        }
+    ], 
+    "version": "1.0.0", 
+    "authors": [
+        {
+            "url": "http://www.andresarmento.com", 
+            "maintainer": false, 
+            "email": null, 
+            "name": "Andr\u00e9 Sarmento Barbosa"
+        }, 
+        {
+            "url": null, 
+            "maintainer": true, 
+            "email": null, 
+            "name": "Pavels Veretennikovs"
+        }
+    ], 
+    "keywords": [
+        "modbus", 
+        "wifi", 
+        "slave", 
+        "tcp"
+    ], 
+    "homepage": "https://github.com/andresarmento/modbus-esp8266", 
+    "id": 1736, 
+    "description": "A library that allows your ESP8266 to communicate via Modbus protocol, acting as a slave (master in development). Supports IP via wireless network (Modbus IP)"
+}

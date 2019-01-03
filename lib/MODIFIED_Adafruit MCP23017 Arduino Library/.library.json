@@ -1,0 +1,51 @@
+{
+    "name": "Adafruit MCP23017 Arduino Library", 
+    "version": "1.0.3", 
+    "keywords": [
+        "signal", 
+        "input", 
+        "output"
+    ], 
+    "description": "Library for the MCP23017 I2C Port Expander", 
+    "frameworks": [
+        "arduino"
+    ], 
+    "platforms": [
+        "atmelavr", 
+        "atmelsam", 
+        "espressif32", 
+        "espressif8266", 
+        "intel_arc32", 
+        "microchippic32", 
+        "nordicnrf51", 
+        "nordicnrf52", 
+        "ststm32", 
+        "teensy", 
+        "timsp430"
+    ], 
+    "authors": [
+        {
+            "email": "info@adafruit.com", 
+            "url": null, 
+            "maintainer": true, 
+            "name": "Adafruit"
+        }
+    ], 
+    "repository": {
+        "type": "git", 
+        "url": "https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library"
+    }, 
+    "homepage": null, 
+    "export": {
+        "include": null, 
+        "exclude": [
+            "extras", 
+            "docs", 
+            "tests", 
+            "test", 
+            "*.doxyfile", 
+            "*.pdf"
+        ]
+    }, 
+    "id": 334
+}

@@ -1,0 +1,316 @@
+Crash information recovered from EEPROM
+Crash # 1 at 130 ms
+Reason of restart: 2
+Exception cause: 0
+epc1=0x40209f81 epc2=0x00000000 epc3=0x00000000 excvaddr=0x00000000 depc=0x00000000
+>>>stack>>>
+3fff0b40: feefeffe 3fff15ac 00000001 40209f58 
+3fff0b50: feefeffe 3fff15ac 3fff15ac 4020a264 
+3fff0b60: feefeffe 3fff15ac 3ffef7a0 402069b2 
+3fff0b70: feefeffe feefeffe feefeffe feefeffe 
+3fff0b80: 3fffdad0 00000000 3ffef7a0 4020bd61 
+3fff0b90: feefeffe feefeffe feefeffe feefeffe 
+3fff0ba0: feefeffe feefeffe feefeffe feefeffe 
+3fff0bb0: feefeffe feefeffe feefeffe feefeffe 
+3fff0bc0: feefeffe feefeffe feefeffe 3ffefbc8 
+3fff0bd0: 3fffdad0 00000000 3ffefbc0 40202074 
+3fff0be0: feefeffe feefeffe 3ffefbd0 402032cc 
+<<<stack<<<
+Crash # 2 at 925189 ms
+Reason of restart: 2
+Exception cause: 0
+epc1=0x402129a4 epc2=0x00000000 epc3=0x00000000 excvaddr=0x00000000 depc=0x00000000
+>>>stack>>>
+3ffffee0: 00000010 3fffff40 3fffff40 40206ccf 
+3ffffef0: 3ffe8ffe 00000000 3fffff40 40206d1b 
+3fffff00: 402198d3 3ffee440 3fffff40 40206d4d 
+3fffff10: 3ffefc04 3fff38cc 3fffff40 40206d9a 
+3fffff20: 3ffe8ffe 40219862 00000002 00000000 
+3fffff30: 000005e0 00000000 3fff39ec 40201ec1 
+3fffff40: 00000000 00000000 00000000 000000fe 
+3fffff50: 0000001e 00000001 40104186 3ffedd40 
+3fffff60: 3ffed498 401009ca 00000000 3ffed9b0 
+3fffff70: 3ffed498 3fff39ec 3fff38ec 402020c2 
+3fffff80: 401007d2 00000000 00000002 3ffee1a8 
+3fffff90: 3fffdc10 00000000 3fff39ec 4022ddac 
+3fffffa0: 40000f49 3fffdab0 3fffdab0 40000f49 
+<<<stack<<<
+Crash # 3 at 1643664 ms
+Reason of restart: 2
+Exception cause: 0
+epc1=0x402071d0 epc2=0x00000000 epc3=0x00000000 excvaddr=0x00000000 depc=0x00000000
+>>>stack>>>
+3fff0dd0: 00000000 00000001 3ffef874 4020b7c2 
+3fff0de0: 3fffdad0 3fffdad0 
+Incomplete stack trace saved!
+<<<stack<<<
+No more EEPROM space available to save crash information!
+LightSensor=345
+Temp&Humidity Status=OK
+Humidity=62
+Temperature=66
+WiFi Status=3
+IP=10.0.0.194
+Heat duration=0
+Cool duration=0
+Fan duration=0
+Thermostat Status=
+Error Code:3
+Coils=00000000 00000000 00000000
+PINS=00000001 01100000 00110100
+Modbus coil 1 value:0
+Modbus coil 2 value:0
+Modbus coil 3 value:0
+Modbus coil 4 value:0
+Modbus coil 5 value:0
+Modbus coil 6 value:0
+Modbus coil 7 value:0
+Modbus coil 8 value:0
+Modbus coil 9 value:0
+Modbus coil 10 value:0
+Modbus coil 11 value:0
+Modbus coil 12 value:0
+Modbus coil 13 value:0
+Modbus coil 14 value:0
+Modbus coil 15 value:0
+Modbus coil 16 value:0
+Modbus coil 17 value:0
+Modbus coil 18 value:0
+Modbus coil 19 value:0
+Modbus coil 20 value:0
+Modbus coil 21 value:0
+Modbus coil 22 value:0
+Modbus coil 23 value:0
+Modbus coil 24 value:0
+Modbus coil 25 value:0
+Modbus coil 26 value:0
+Modbus coil 27 value:0
+Modbus coil 28 value:0
+Modbus coil 29 value:0
+Modbus coil 30 value:0
+Modbus coil 31 value:0
+Modbus coil 32 value:0
+Modbus coil 33 value:0
+Modbus coil 34 value:0
+Modbus coil 35 value:0
+Modbus coil 36 value:0
+Modbus coil 37 value:0
+Modbus coil 38 value:0
+Modbus coil 39 value:0
+Modbus coil 40 value:0
+Modbus coil 41 value:0
+Modbus coil 42 value:0
+Modbus coil 43 value:0
+Modbus coil 44 value:0
+Modbus coil 45 value:0
+Modbus coil 46 value:0
+Modbus coil 47 value:0
+Modbus coil 48 value:0
+Modbus coil 49 value:0
+Modbus coil 50 value:0
+Modbus coil 51 value:0
+Modbus coil 52 value:0
+Modbus coil 53 value:0
+Modbus coil 54 value:0
+Modbus coil 55 value:0
+Modbus coil 56 value:0
+Modbus coil 57 value:0
+Modbus coil 58 value:0
+Modbus coil 59 value:0
+Modbus coil 60 value:0
+Modbus coil 61 value:0
+Modbus coil 62 value:0
+Modbus coil 63 value:0
+Modbus coil 64 value:0
+Modbus coil 65 value:0
+Modbus coil 66 value:0
+Modbus coil 67 value:0
+Modbus coil 68 value:0
+Modbus coil 69 value:0
+Modbus coil 70 value:0
+Modbus coil 71 value:0
+Modbus coil 72 value:0
+Modbus coil 73 value:0
+Modbus coil 74 value:0
+Modbus coil 75 value:0
+Modbus coil 76 value:0
+Modbus coil 77 value:0
+Modbus coil 78 value:0
+Modbus coil 79 value:0
+Modbus coil 80 value:0
+Modbus coil 81 value:0
+Modbus coil 82 value:0
+Modbus coil 83 value:0
+Modbus coil 84 value:0
+Modbus coil 85 value:0
+Modbus coil 86 value:0
+Modbus coil 87 value:0
+Modbus coil 88 value:0
+Modbus coil 89 value:0
+Modbus coil 90 value:0
+Modbus coil 91 value:0
+Modbus coil 92 value:0
+Modbus coil 93 value:0
+Modbus coil 94 value:0
+Modbus coil 95 value:0
+Modbus coil 96 value:0
+Modbus coil 97 value:0
+Modbus coil 98 value:0
+Modbus coil 99 value:0
+Modbus coil 100 value:0
+Modbus coil 101 value:0
+Modbus coil 102 value:0
+Modbus coil 103 value:0
+Modbus coil 104 value:0
+Modbus coil 105 value:0
+Modbus coil 106 value:0
+Modbus coil 107 value:0
+Modbus coil 108 value:0
+Modbus coil 109 value:0
+Modbus coil 110 value:0
+Modbus coil 111 value:0
+Modbus coil 112 value:0
+Modbus coil 113 value:0
+Modbus coil 114 value:0
+Modbus coil 115 value:0
+Modbus coil 116 value:0
+Modbus coil 117 value:0
+Modbus coil 118 value:0
+Modbus coil 119 value:0
+Modbus coil 120 value:0
+Modbus coil 121 value:0
+Modbus coil 122 value:0
+Modbus coil 123 value:0
+Modbus coil 124 value:0
+Modbus coil 125 value:0
+Modbus coil 126 value:0
+Modbus coil 127 value:0
+Modbus coil 128 value:0
+Modbus hReg 1 value:345
+Modbus hReg 2 value:62
+Modbus hReg 3 value:66
+Modbus hReg 4 value:0
+Modbus hReg 5 value:0
+Modbus hReg 6 value:0
+Modbus hReg 7 value:7
+Modbus hReg 8 value:8
+Modbus hReg 9 value:9
+Modbus hReg 10 value:10
+Modbus hReg 11 value:11
+Modbus hReg 12 value:12
+Modbus hReg 13 value:13
+Modbus hReg 14 value:14
+Modbus hReg 15 value:15
+Modbus hReg 16 value:16
+Modbus hReg 17 value:17
+Modbus hReg 18 value:18
+Modbus hReg 19 value:19
+Modbus hReg 20 value:20
+Modbus hReg 21 value:21
+Modbus hReg 22 value:22
+Modbus hReg 23 value:23
+Modbus hReg 24 value:24
+Modbus hReg 25 value:25
+Modbus hReg 26 value:26
+Modbus hReg 27 value:27
+Modbus hReg 28 value:28
+Modbus hReg 29 value:29
+Modbus hReg 30 value:30
+Modbus hReg 31 value:31
+Modbus hReg 32 value:32
+Modbus hReg 33 value:33
+Modbus hReg 34 value:34
+Modbus hReg 35 value:35
+Modbus hReg 36 value:36
+Modbus hReg 37 value:37
+Modbus hReg 38 value:38
+Modbus hReg 39 value:39
+Modbus hReg 40 value:40
+Modbus hReg 41 value:41
+Modbus hReg 42 value:42
+Modbus hReg 43 value:43
+Modbus hReg 44 value:44
+Modbus hReg 45 value:45
+Modbus hReg 46 value:46
+Modbus hReg 47 value:47
+Modbus hReg 48 value:48
+Modbus hReg 49 value:49
+Modbus hReg 50 value:50
+Modbus hReg 51 value:51
+Modbus hReg 52 value:52
+Modbus hReg 53 value:53
+Modbus hReg 54 value:54
+Modbus hReg 55 value:55
+Modbus hReg 56 value:56
+Modbus hReg 57 value:57
+Modbus hReg 58 value:58
+Modbus hReg 59 value:59
+Modbus hReg 60 value:60
+Modbus hReg 61 value:61
+Modbus hReg 62 value:62
+Modbus hReg 63 value:63
+Modbus hReg 64 value:64
+Modbus hReg 65 value:65
+Modbus hReg 66 value:66
+Modbus hReg 67 value:67
+Modbus hReg 68 value:68
+Modbus hReg 69 value:69
+Modbus hReg 70 value:70
+Modbus hReg 71 value:71
+Modbus hReg 72 value:72
+Modbus hReg 73 value:73
+Modbus hReg 74 value:74
+Modbus hReg 75 value:75
+Modbus hReg 76 value:76
+Modbus hReg 77 value:77
+Modbus hReg 78 value:78
+Modbus hReg 79 value:79
+Modbus hReg 80 value:80
+Modbus hReg 81 value:81
+Modbus hReg 82 value:82
+Modbus hReg 83 value:83
+Modbus hReg 84 value:84
+Modbus hReg 85 value:85
+Modbus hReg 86 value:86
+Modbus hReg 87 value:87
+Modbus hReg 88 value:88
+Modbus hReg 89 value:89
+Modbus hReg 90 value:90
+Modbus hReg 91 value:91
+Modbus hReg 92 value:92
+Modbus hReg 93 value:93
+Modbus hReg 94 value:94
+Modbus hReg 95 value:95
+Modbus hReg 96 value:96
+Modbus hReg 97 value:97
+Modbus hReg 98 value:98
+Modbus hReg 99 value:99
+Modbus hReg 100 value:1
+Modbus hReg 101 value:2
+Modbus hReg 102 value:0
+Modbus hReg 103 value:3
+Modbus hReg 104 value:3
+Modbus hReg 105 value:0
+Modbus hReg 106 value:106
+Modbus hReg 107 value:218
+Modbus hReg 108 value:33883
+Modbus hReg 109 value:33880
+Modbus hReg 110 value:15
+Modbus hReg 111 value:41
+Modbus hReg 112 value:23
+Modbus hReg 113 value:8
+Modbus hReg 114 value:1
+Modbus hReg 115 value:115
+Modbus hReg 116 value:20022
+Modbus hReg 117 value:117
+Modbus hReg 118 value:118
+Modbus hReg 119 value:119
+Modbus hReg 120 value:120
+Modbus hReg 121 value:121
+Modbus hReg 122 value:122
+Modbus hReg 123 value:123
+Modbus hReg 124 value:124
+Modbus hReg 125 value:125
+Modbus hReg 126 value:126
+Modbus hReg 127 value:127
+Modbus hReg 128 value:128

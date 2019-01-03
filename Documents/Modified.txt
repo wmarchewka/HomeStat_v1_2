@@ -1,0 +1,124 @@
+/*
+    ModbusIP_ESP8266.cpp - Source for Modbus IP ESP8266 Library
+    Copyright (C) 2015 André Sarmento Barbosa
+*/
+#include "ModbusIP_ESP8266.h"
+
+WiFiServer server(MODBUSIP_PORT);
+
+ModbusIP::ModbusIP() {
+
+}
+
+void ModbusIP::config(const char* ssid, const char* password) {
+	WiFi.mode(WIFI_STA);
+	WiFi.begin(ssid, password);
+	server.begin();
+}
+
+bool ModbusIP::task() {
+	unsigned long sm = micros();
+	unsigned long ccm;
+	unsigned long cam;
+	unsigned long sam;
+	static unsigned long lastMaxPacketTime=0;
+	static const size_t bufferSize = 128;
+	static uint8_t rbuf[bufferSize];
+
+	WiFiClient client = server.available();
+	sam = micros();
+	client.setNoDelay(1);
+	client.setTimeout(1000);
+	int raw_len = 0;
+	int total;
+
+	if (client)
+	{
+		if (client.connected())
+		{
+			ccm = micros();
+			if (client.available()){
+				raw_len = client.available();
+				client.read(rbuf, raw_len);
+			}
+		}
+
+		Serial.println("DONE");
+		Serial.print("Length:");
+		Serial.println(raw_len);
+		Serial.println("DONE");
+
+		for (int j=0; j <= raw_len; j++){
+			Serial.print("Item:");
+			Serial.print(j);
+			Serial.print(" ");
+			Serial.println(rbuf[j], HEX);
+		}
+
+		if (raw_len > 7) {
+		for (int i=0; i<7; i++){
+			_MBAP[i] = rbuf[i];
+			Serial.println(_MBAP[i]);
+		} //Get MBAP
+
+		_len = _MBAP[4] << 8 | _MBAP[5];
+		_len--; // Do not count with last byte from MBAP
+
+		Serial.print("Length: ");
+		Serial.println(_len);
+
+		if (_MBAP[2] !=0 || _MBAP[3] !=0) return false;   //Not a MODBUSIP packet
+		if (_len > MODBUSIP_MAXFRAME) return false;      //Length is over MODBUSIP_MAXFRAME
+		_frame = (byte*) malloc(_len);
+
+		raw_len = raw_len - 7;
+		for (int i=0; i< raw_len; i++)	_frame[i] = rbuf[i]; //Get Modbus PDU
+
+		this->receivePDU(_frame);
+		client.flush();
+
+		unsigned long rm = micros();
+
+		if (_reply != MB_REPLY_OFF) {
+		    //MBAP
+			_MBAP[4] = (_len+1) >> 8;     //_len+1 for last byte from MBAP
+			_MBAP[5] = (_len+1) & 0x00FF;
+
+			size_t send_len = (unsigned int)_len + 7;
+			uint8_t sbuf[send_len];
+
+			int i;
+
+			for (i=0; i<7; i++)	    sbuf[i] = _MBAP[i];
+			for (i=0; i<_len; i++)	sbuf[i+7] = _frame[i];
+			client.write(sbuf, send_len);
+		}
+			client.stop();
+			unsigned long em = micros();
+
+			if ( (em - sm)  > lastMaxPacketTime) {
+					lastMaxPacketTime = em - sm;
+					//Serial.print("ERM:  ");   	//total send and recv
+					//Serial.println(em - sm);
+			}
+				if ( ((rm - sm)  > 1) || ( (em - sm)  > 1) ){
+				Serial.print("SM :  ");    	//start
+				Serial.println(sm);
+				Serial.print("SAM:  ");    	//server avail
+				Serial.println(sam - sm);
+				Serial.print("CCM:  ");			//client connected
+				Serial.println(ccm - sm);
+				Serial.print("CAM:  ");			//client avaliable
+				Serial.println(cam - sm);
+				Serial.print("RM:   ");			//receive
+			  Serial.println(rm - sm);
+				Serial.print("ERM:  ");   	//total send and recv
+				Serial.println(em - sm);
+			}
+			free(_frame);
+			_len = 0;
+			return true;
+		}
+	}
+}
+	

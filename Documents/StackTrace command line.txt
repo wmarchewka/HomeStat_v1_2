@@ -1,0 +1,1 @@
+python3 parser.py -p ESP8266 -t ~/.platformio/packages/toolchain-xtensa -e firmware.elf -f stacktrace.txt

@@ -1,0 +1,55 @@
+void EEPROM_LoadSettings()
+{
+
+  Serial.println(F("Loading settings from EEPROM.."));
+  //wifi ssid and password are stord in the wifi manager Library
+
+
+  // int i = 0;
+  //
+  // //strcpy(glb_SSID, glb_defaultSSID);
+  // //strcpy(glb_SSIDpassword, glb_defaultSSIDpassword);
+  // //EEPROM.put(glb_eepromSettingsOffset + ES_SSID, glb_SSID);
+  // //EEPROM.put(glb_eepromSettingsOffset + ES_SSIDPASSWORD, glb_SSIDpassword);
+  // //EEPROM.commit();
+  //
+  // strcpy(glb_SSID, "");
+  // strcpy(glb_SSIDpassword, "");
+  //
+  // EEPROM.get(glb_eepromSettingsOffset + ES_SSID, glb_SSID);
+  // EEPROM.get(glb_eepromSettingsOffset + ES_SSIDPASSWORD, glb_SSIDpassword);
+  //
+  //
+  // //for(i=0;glb_SSID[i] != '\0';i++)
+  // for(i=0;i < 32;i++)
+  // {
+  //   Serial.print(i);Serial.print(":");Serial.print(glb_SSID[i]);Serial.print(":");
+  //   if ( (isAlphaNumeric(glb_SSID[i])) || (isPunct(glb_SSID[i])) )
+  //   {
+  //     Serial.println("ok");
+  //   }
+  //   else
+  //   {
+  //     strcpy(glb_SSID, glb_defaultSSID);
+  //     Serial.println(F("Using default SSID"));
+  //     break;
+  //   }
+  // }
+  //
+  // for(i=0;glb_SSIDpassword[i] != '\0';i++)
+  // {
+  //   //Serial.print(i);Serial.print(":");Serial.print(glb_SSIDpassword[i]);Serial.print(":");
+  //   if ( (isAlphaNumeric(glb_SSIDpassword[i])) || (isPunct(glb_SSIDpassword[i])) )
+  //   {
+  //     Serial.println("ok");
+  //   }
+  //   else
+  //   {
+  //     strcpy(glb_SSIDpassword, glb_defaultSSIDpassword);
+  //     Serial.println(F("Using default PASS"));
+  //     break;
+  //   }
+  // }
+
+
+}

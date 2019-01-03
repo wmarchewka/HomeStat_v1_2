@@ -145,7 +145,7 @@ void MQTT_Data_Setup()
   mqttData[0].pin_number = 36;
   mqttData[0].mqttTopic = "/TESTPIN36";
   mqttData[0].payload = "";
-  mqttData[0].length = 4;
+  mqttData[0].length = sizeof(.mqttTopic);
 
   Serial.print("Payload value = ");
   Serial.println(mqttData[0].payload);

@@ -1,11 +1,12 @@
 #ifndef __THERMOSTAT_INCLUDE
 #define __THERMOSTAT_INCLUDE
+#define NUMSLAVES 20
 
 #include <Arduino.h>
 #include <FS.h>
 #include <ArduinoOTA.h>
 #include <rom/rtc.h>
-
+#include <esp_now.h>
 //define used in task scheduler
 #define _TASK_TIMECRITICAL
 #define _TASK_WDT_IDS
@@ -95,7 +96,7 @@ struct mqttDataStruct
 {
     uint8_t pin_number;
     char *mqttTopic;
-    char *payload; 
+    char *payload;
     uint16_t length;
 };
 
@@ -124,6 +125,7 @@ const unsigned int ts_lightsensor = 3;
 const unsigned int ts_temperature = 1;
 const word glb_maxCoilSize PROGMEM = 256;
 const word glb_maxHregSize PROGMEM = 256;
+esp_now_peer_info_t slaves[NUMSLAVES] = {};
 File fsUploadFile;
 File glb_errorLog;
 File glb_temperatureLog;
@@ -136,6 +138,7 @@ int glb_lightSensor = 0;
 int glb_lowMemory = 80000;
 int glb_TaskTimes[30] = {};
 int glb_temperature = 0;
+int SlaveCnt = 0;
 IPAddress glb_ipAddress; //ip address
 long glb_wifiRSSI = 0;
 String glb_dataLogPath = "/datalog.csv";
@@ -198,6 +201,7 @@ void FileSystem_SystemDataSave(String);
 void FileSystem_SystemLogCreate();
 void handleSubmit();
 void I2C_Setup();
+void ESPNowInit();
 void Interrupt_Detect_AC();
 void IO_ControlPins();
 void IO_Pins_Setup();
@@ -208,6 +212,7 @@ void LED_Error();
 void LED_Off();
 void LED_On();
 void LED_OnDisable();
+void ESPNowManageSlave();
 void mDNS_Setup();
 void MQTT_Callback(char *, byte *, unsigned int);
 void MQTT_Data_Setup();
@@ -215,11 +220,15 @@ void MQTT_Publish();
 void MQTT_Reconnect();
 void MQTT_RunLoop();
 void MQTT_Setup();
+void ESPNowOnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status);
 void OTA_Setup();
 void OTA_Update();
 void Reset_Reason();
 void saveConfigCallback();
 void selftestMcp();
+void ESPNowSetup();
+void ESPNowSendData();
+void ESPNowScanForSlaves();
 void StartupPrinting_Setup();
 void Tasks_Enable_Setup();
 void TaskScheduler_Setup();

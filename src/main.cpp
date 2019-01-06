@@ -92,6 +92,19 @@ Task taskMQTTRUN_21(50, TASK_FOREVER, &MQTT_RunLoop, NULL);
 Task taskMQTTUpdate_22(3000, TASK_FOREVER, &MQTT_Publish, NULL);
 
 //************************************************************************************
+// callback when data is recv from Master
+void ESPNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
+{
+  char macStr[18];
+  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+  Serial.print("Last Packet Recv from: ");
+  Serial.println(macStr);
+  Serial.print("Last Packet Recv Data: ");
+  Serial.println(*data);
+  Serial.println("");
+}
+//************************************************************************************
 // Scan for slaves in AP mode
 void ESPNowScanForSlaves()
 {
@@ -303,16 +316,36 @@ void ESPNowSetup()
   Serial.println(F("ROUTINE_ESPNowSetup"));
 
 #ifdef ESP32_WROVER
-  WROVER_KIT_LCD tft; //lcd
-#elif ESP32_DEVKIT
-  //Puts ESP in STATION MODE
   WiFi.mode(WIFI_STA);
+  Serial.print("STA MAC: ");
+  Serial.println(WiFi.macAddress());
+#elif ESP32_DEVKIT
+  //Puts ESP in AP MODE
+  String Prefix = "Slave:";
+  String Mac = WiFi.macAddress();
+  String SSID = Prefix + Mac;
+  String Password = "123456789";
+  bool result = WiFi.softAP(SSID.c_str(), Password.c_str(), CHANNEL, 0);
+  if (!result)
+  {
+    Serial.println("AP Config failed.");
+  }
+  else
+  {
+    Serial.println("  AP Config Success. Broadcasting with AP: " + String(SSID));
+  }
 #endif
 
   ESPNowInit();
   // Once ESPNow is successfully Init, we will register for Send CB to
   // get the status of Trasnmitted packet
+
+#ifdef ESP32_WROVER
   esp_now_register_send_cb(ESPNowOnDataSent);
+#elif ESP32_DEVKIT
+  esp_now_register_recv_cb(ESPNowOnDataRecv);
+  
+#endif
 }
 //************************************************************************************
 // callback when data is sent from Master to Slave
@@ -378,20 +411,23 @@ void MQTT_Publish()
 {
   Serial.println(F("ROUTINE_MQTT_Publish"));
 
-  char msg[50];
-  glb_TimeLong.toCharArray(msg, 50);
-  Serial.println(glb_TimeLong);
-  bool debug = 1;
-  if (debug)
-    Serial.println(" Sending values to MQTT server...");
-  if (!MQTT_Client.connected())
+  if (WiFi.status() == WL_CONNECTED)
   {
-    Serial.println("  MQTT reconnecting");
-    MQTT_Reconnect();
-  }
-  else
-  {
-    MQTT_Client.publish("outTopic", msg);
+    char msg[50];
+    glb_TimeLong.toCharArray(msg, 50);
+    Serial.println(glb_TimeLong);
+    bool debug = 1;
+    if (debug)
+      Serial.println(" Sending values to MQTT server...");
+    if (!MQTT_Client.connected())
+    {
+      Serial.println("  MQTT reconnecting");
+      MQTT_Reconnect();
+    }
+    else
+    {
+      MQTT_Client.publish("outTopic", msg);
+    }
   }
 }
 //************************************************************************************
@@ -1536,7 +1572,7 @@ void loop()
     // Send data to device
     ESPNowSendData();
   }
-  #endif
+#endif
 }
 //************************************************************************************
 int BootDevice_Detect(void)
@@ -2025,7 +2061,7 @@ void setup()
   //FileSystem_Format();
   FileSystem_ErrorLogCreate();
   ThermostatMode_Setup();
-  WiFiManager_Setup();
+  //WiFiManager_Setup();
   TimeSync_Setup();
   TelnetServer_Setup();
   LCD_Setup();
@@ -2430,14 +2466,14 @@ void Tasks_Enable_Setup()
   taskDHT11Temp_2.enable();
   taskTimeRoutine_3.enable();
   taskLED_Error_4.enable();
-  taskWifiCheckStatus_5.enable();
+  taskWifiCheckStatus_5.disable();
   taskThermostatDetect_6.enable();
   taskIoControlPins_7.enable();
   taskTelnet_8.enable();
   taskLED_onEnable_9.enable();
   taskLED_OnDisable_10.enable();
   taskErrorsCodesProcess_11.enable();
-  //taskModbusProcess_12.enable();
+  //taskModbusProcess_12.disable();
   //taskEEpromProcess_13.disable();
   taskWebServer_Process_15.enable();
   taskDataServer_Process_16.disable();

@@ -109,10 +109,6 @@ void Adafruit_MCP23017::begin(uint8_t addr, uint8_t sda, uint8_t scl)
 		addr = 7;
 	}
 	i2caddr = addr;
-	Serial.print("SDA - ");
-	Serial.println(sda);
-	Serial.print("SCL - ");
-	Serial.print(scl);
 
 	Wire.begin(sda, scl);
 

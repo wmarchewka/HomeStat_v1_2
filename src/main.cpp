@@ -7,8 +7,8 @@
 #define DEBUG_ESP_OTA
 #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
 #define FORMAT_SPIFFS_IF_FAILED true
-#define CHANNEL 3
 #define PRINTSCANRESULTS 0
+#define SEALEVELPRESSURE_HPA (1013.25)
 
 //#include "sensitive.h"
 #include "MainInclude.h"
@@ -16,6 +16,9 @@
 #include "Free_Fonts.h"
 #include <Adafruit_GFX.h>
 #include <Adafruit_MCP23017.h>
+#include <Adafruit_INA219.h>
+#include <Adafruit_BME280.h>
+#include <Adafruit_Sensor.h>
 #include <Arduino.h>
 #include <ArduinoOTA.h>
 #include <DHT.h>
@@ -43,23 +46,23 @@
 #include <Wire.h>
 
 #ifdef ESP32_WROVER
-#include "WROVER_KIT_LCD.h"
-#include "esp_wrover_pins.h"
-#elif ESP32_DEVKIT
-#include "TFT_eSPI.h" // Include the graphics library (this includes the sprite functions)
-#include "esp_devkit_pins.h"
+#include "WROVER_KIT_LCD.h"               //graphic library used for WROVER
+#include "esp_wrover_pins.h"              // pins specific for WROVER
+#define CHANNEL 3                         // CHANNEL FOR WROVER FOR ESPNOW
+#elif ESP32_DEVKIT                        // 
+#include "TFT_eSPI.h"                     // graphic library used with ST7735 for DEV KIt
+#include "esp_devkit_pins.h"              // pins specific for DEV KIT
+#define CHANNEL 1                         // channel for dev kit
 #endif
 
-//classes
-DHT dht;               //temperature humidity
-Adafruit_MCP23017 mcp; //io expander
-
-#ifdef ESP32_WROVER
-WROVER_KIT_LCD tft; //lcd
-#elif ESP32_DEVKIT
-TFT_eSPI tft = TFT_eSPI(); // Create object "tft"
+//board specific classes
+#ifdef ESP32_WROVER                       //
+WROVER_KIT_LCD tft;                       //  wrover lcd
+#elif ESP32_DEVKIT                         //
+TFT_eSPI tft = TFT_eSPI();                // dev kit lcd
 #endif
 
+// classes for both boards
 Scheduler runner;                         //task schedule
 WebServer webServer(HTTP_WEBSERVER_PORT); //webserver
 WebServer DataServer(DATASERVER_PORT);    //wifi server
@@ -67,8 +70,12 @@ RemoteDebug Debug;                        //telnet debug
 WiFiManager wifiManager;                  //wifi manager
 WiFiClient mqttClient;                    // wifi client for use withMQTT
 PubSubClient MQTT_Client(mqttClient);     // MQTT client
+DHT dht;                                  //temperature humidity
+Adafruit_MCP23017 mcp;                    //io expander
+Adafruit_INA219 ina219;                   // current reading
+Adafruit_BME280 bme;                      // I2C
 
-//Task taskModbusReadData_1(30, TASK_FOREVER, &Modbus_ReadData, NULL);
+Task taskCurrentSensorRead(1000, TASK_FOREVER, &CurrentSensor_Read, NULL);
 Task taskDHT11Temp_2(2000, TASK_FOREVER, &DHT11_TempHumidity, NULL);
 Task taskTimeRoutine_3(1000, TASK_FOREVER, &TimeRoutine, NULL);
 Task taskLED_Error_4(15000, TASK_FOREVER, &LED_Error, NULL);
@@ -79,7 +86,7 @@ Task taskTelnet_8(20, TASK_FOREVER, &TelnetServer_Process, NULL);
 Task taskLED_onEnable_9(4000, TASK_ONCE, NULL, NULL, false, &LED_OnEnable, &LED_OnDisable);
 Task taskLED_OnDisable_10(TASK_IMMEDIATE, TASK_FOREVER, NULL, NULL, true, NULL, &LED_Off);
 Task taskErrorsCodesProcess_11(500, TASK_FOREVER, &ErrorCodes_Process, NULL);
-//Task taskModbusProcess_12(50, TASK_FOREVER, &Modbus_Process, NULL);
+Task taskPressureSensorRead_12(1000, TASK_FOREVER, &PressureSensor_Read, NULL);
 //Task taskEEpromProcess_13(1000, TASK_FOREVER, &EEPROM_Process, NULL);
 //Task taskMBcoilReg11_14(TASK_IMMEDIATE, TASK_ONCE, NULL, NULL, false, NULL, &ESP_Restart);
 Task taskWebServer_Process_15(50, TASK_FOREVER, &WebServer_Process, NULL);
@@ -91,16 +98,180 @@ Task taskLCDUpdate_20(500, TASK_FOREVER, &LCD_Update, NULL);
 Task taskMQTTRUN_21(50, TASK_FOREVER, &MQTT_RunLoop, NULL);
 Task taskMQTTUpdate_22(3000, TASK_FOREVER, &MQTT_Publish, NULL);
 
+//******************************************************************************
+void deepSleep()
+{
+  if (glb_debug)
+    Serial.println("Going into deep sleep for 60 seconds");
+  //ESP.deepSleep(20e6, RF_NO_CAL); // 20e6 is 20K microseconds
+  //ESP.deepSleep(20e6 WAKE_RF_DISABLED);
+  Serial.print("End Time : ");
+  Serial.print(millis() - glb_StartTime);
+  ESP.restart();
+}
+//************************************************************************************
+void PressureSensor_Setup()
+{
+  Serial.println("ROUTINE_PressureSensor_Setup");
+  bool status;
+  Wire.begin(I2C_DATA_PIN, I2C_CLOCK_PIN);
+  status = bme.begin();
+  if (!status)
+  {
+    if (glb_debug)
+      Serial.println("  Could not find a valid BME280 sensor, check wiring!");
+  }
+  else
+  {
+    if (glb_debug)
+      Serial.println("  Found a valid BME280 sensor!");
+    bme.setSampling(Adafruit_BME280::MODE_FORCED,
+                    Adafruit_BME280::SAMPLING_X1, // temperature
+                    Adafruit_BME280::SAMPLING_X1, // pressure
+                    Adafruit_BME280::SAMPLING_X1, // humidity
+                    Adafruit_BME280::FILTER_OFF);
+  }
+  Serial.print("  BME Setup End Time : ");
+  Serial.println(millis() - glb_StartTime);
+}
+//************************************************************************************
+void PressureSensor_Read()
+{
+  Serial.println("ROUTINE_PressureSensor_Read");
+  glb_Routine = 'T';
+  //getCurrent();
+  if (glb_debug)
+    Serial.println(F("  Processing temperature and humidity sensor..."));
+
+  bme.takeForcedMeasurement();
+
+  glb_temperature = bme.readTemperature();
+  glb_temperature = glb_temperature * 1.8 + 32.0;
+  if (glb_debug)
+    Serial.print("  Temperature = ");
+  if (glb_debug)
+    Serial.print(glb_temperature);
+  if (glb_debug)
+    Serial.println(" *F");
+
+  glb_pressure = bme.readPressure() / 100.0F;
+  if (glb_debug)
+    Serial.print("  Pressure = ");
+  if (glb_debug)
+    Serial.print(glb_pressure);
+  if (glb_debug)
+    Serial.println(" hPa");
+
+  glb_altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);
+  if (glb_debug)
+    Serial.print("  Approx. Altitude = ");
+  if (glb_debug)
+    Serial.print(glb_altitude);
+  if (glb_debug)
+    Serial.println(" m");
+
+  glb_humidity = bme.readHumidity();
+  if (glb_debug)
+    Serial.print("  Humidity = ");
+  if (glb_debug)
+    Serial.print(glb_humidity);
+  if (glb_debug)
+    Serial.println(" %");
+
+  if (glb_debug)
+    Serial.println();
+
+  Serial.print("  Temp End Time : ");
+  Serial.println(millis() - glb_StartTime);
+
+  //getCurrent();
+}
+//************************************************************************************
+void CurrentSensor_Read()
+{
+
+  Serial.println("ROUTINE_CurrentSensor_Read");
+  
+  ina219.begin();
+
+  glb_debug = 1;
+  glb_isrFlag = false;
+  isrCounter++;
+  if (isrCounter > 299)
+  {
+    isrCounter = 299;
+    glb_ISREnded = true;
+  }
+  if (glb_debug)
+    Serial.println("  Measuring voltage and current with INA219 ...");
+
+  float shuntvoltage = 0;
+  float busvoltage = 0;
+  float current_mA = 0;
+  float loadvoltage = 0;
+  float power_mW = 0;
+
+  shuntvoltage = ina219.getShuntVoltage_mV();
+  busvoltage = ina219.getBusVoltage_V();
+  current_mA = ina219.getCurrent_mA();
+  power_mW = ina219.getPower_mW();
+  loadvoltage = busvoltage + (shuntvoltage / 1000);
+
+  powerReading[isrCounter] = power_mW;
+  currentReading[isrCounter] = current_mA;
+  timeReading[isrCounter] = millis();
+  routineReading[isrCounter] = glb_Routine;
+  glb_batteryVoltage = loadvoltage;
+  glb_current = current_mA;
+
+  if (glb_debug)
+    Serial.print("  Bus Voltage:   ");
+  if (glb_debug)
+    Serial.print(busvoltage);
+  if (glb_debug)
+    Serial.println(" V");
+  if (glb_debug)
+    Serial.print("  Shunt Voltage: ");
+  if (glb_debug)
+    Serial.print(shuntvoltage);
+  if (glb_debug)
+    Serial.println(" mV");
+  if (glb_debug)
+    Serial.print("  Load Voltage:  ");
+  if (glb_debug)
+    Serial.print(loadvoltage);
+  if (glb_debug)
+    Serial.println(" V");
+  if (glb_debug)
+    Serial.print("  Current:       ");
+  if (glb_debug)
+    Serial.print(current_mA);
+  if (glb_debug)
+    Serial.println(" mA");
+  if (glb_debug)
+    Serial.print("  Power:         ");
+  if (glb_debug)
+    Serial.print(power_mW);
+  if (glb_debug)
+    Serial.println(" mW");
+  if (glb_debug)
+    Serial.println("");
+
+  Serial.print("  Current End Time : ");
+  Serial.println(millis() - glb_StartTime);
+}
 //************************************************************************************
 // callback when data is recv from Master
 void ESPNowOnDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len)
 {
+
+  Serial.println(F("ESPNowOnDataRecv"));
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  Serial.print("Last Packet Recv from: ");
+  Serial.print("  Last Packet Recv from: ");
   Serial.println(macStr);
-  Serial.print("Last Packet Recv Data: ");
+  Serial.print("  Last Packet Recv Data: ");
   Serial.println(*data);
   Serial.println("");
 }
@@ -266,18 +437,18 @@ void ESPNowManageSlave()
 void ESPNowSendData()
 {
   Serial.println(F("ROUTINE_ESPNowSendData"));
-  uint8_t data = 0;
+  static uint8_t data = 0;
   data++;
   for (int i = 0; i < SlaveCnt; i++)
   {
     const uint8_t *peer_addr = slaves[i].peer_addr;
     if (i == 0)
     { // print only for first slave
-      Serial.print("Sending: ");
+      Serial.print("  Sending: ");
       Serial.println(data);
     }
     esp_err_t result = esp_now_send(peer_addr, &data, sizeof(data));
-    Serial.print("Send Status: ");
+    Serial.print("  Send Status: ");
     if (result == ESP_OK)
     {
       Serial.println("Success");
@@ -311,16 +482,34 @@ void ESPNowSendData()
   }
 }
 //************************************************************************************
+String macToStr(const uint8_t *mac)
+{
+  String result;
+  for (int i = 0; i < 6; ++i)
+  {
+    result += String(mac[i], 16);
+    if (i < 5)
+      result += ':';
+  }
+  return result;
+} 
+//************************************************************************************
 void ESPNowSetup()
 {
   Serial.println(F("ROUTINE_ESPNowSetup"));
 
 #ifdef ESP32_WROVER
+  String Prefix = " Master:";
+  String clientMac = "";
+  unsigned char wifi_Mac[6];
+  WiFi.macAddress(wifi_Mac);
+  clientMac += macToStr(wifi_Mac);
+  String wifi_SSID = Prefix + clientMac;
   WiFi.mode(WIFI_STA);
-  Serial.print("STA MAC: ");
-  Serial.println(WiFi.macAddress());
+  Serial.println(wifi_SSID);
 #elif ESP32_DEVKIT
   //Puts ESP in AP MODE
+  WiFi.mode(WIFI_AP);
   String Prefix = "Slave:";
   String Mac = WiFi.macAddress();
   String SSID = Prefix + Mac;
@@ -355,9 +544,9 @@ void ESPNowOnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status)
   char macStr[18];
   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  Serial.print("Last Packet Sent to: ");
+  Serial.print("  Last Packet Sent to: ");
   Serial.println(macStr);
-  Serial.print("Last Packet Send Status: ");
+  Serial.print("  Last Packet Send Status: ");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
 //************************************************************************************
@@ -397,6 +586,7 @@ void MQTT_RunLoop()
 //************************************************************************************
 void MQTT_Data_Setup()
 {
+  Serial.println(F("MQTT_Data_Setup"));
 
   mqttData[0].pin_number = 36;
   mqttData[0].mqttTopic = "/TESTPIN36";
@@ -622,7 +812,7 @@ void TelnetServer_ProcessCommand()
     String tReg = lastCmd.substring(12, 2);
     int iReg = tReg.toInt();
     if (iReg == 1)
-      //taskModbusReadData_1.enable();
+      //taskCurrentSensorRead.enable();
       if (iReg == 2)
         taskDHT11Temp_2.enable();
     if (iReg == 3)
@@ -644,7 +834,7 @@ void TelnetServer_ProcessCommand()
     if (iReg == 11)
       taskErrorsCodesProcess_11.enable();
     if (iReg == 12)
-      //taskModbusProcess_12.enable();
+      //taskPressureSensorRead_12.enable();
       if (iReg == 13)
         //taskEEpromProcess_13.enable();
         if (iReg == 14)
@@ -666,7 +856,7 @@ void TelnetServer_ProcessCommand()
     String tReg = lastCmd.substring(13, 2);
     int iReg = tReg.toInt();
     if (iReg == 1)
-      //taskModbusReadData_1.disable();
+      //taskCurrentSensorRead.disable();
       if (iReg == 2)
         taskDHT11Temp_2.disable();
     if (iReg == 3)
@@ -688,7 +878,7 @@ void TelnetServer_ProcessCommand()
     if (iReg == 11)
       taskErrorsCodesProcess_11.disable();
     // if (iReg == 12)
-    //   taskModbusProcess_12.disable();
+    //   taskPressureSensorRead_12.disable();
     //if (iReg == 13)
     //taskEEpromProcess_13.disable();
     // if (iReg == 14)
@@ -2082,6 +2272,7 @@ void setup()
   Tasks_Enable_Setup();
   mDNS_Setup();
   ESPNowSetup();
+  PressureSensor_Setup();
 }
 //************************************************************************************
 void ThermostatMode_Setup()
@@ -2303,9 +2494,13 @@ void I2C_Setup()
 // used to override clock and data pins
 //mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
 #elif ESP32_DEVKIT
+  Serial.print("  I2C Data Pin : ");
+  Serial.println(I2C_DATA_PIN);
+  Serial.print("  I2C CLock Pin : ");
+  Serial.println(I2C_CLOCK_PIN);
+  //Wire.begin(I2C_DATA_PIN, I2C_CLOCK_PIN);
   mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
-  //mcp.begin(0);
-  Serial.println("here");
+  mcp.begin(0);
 #endif
 }
 //************************************************************************************
@@ -2462,7 +2657,7 @@ void Tasks_Enable_Setup()
 {
   Serial.println(F("ROUTINE_Tasks_Enable_Setup"));
   Serial.println(F("  Enabling Tasks..."));
-  //taskModbusReadData_1.disable();
+  taskCurrentSensorRead.enable();
   taskDHT11Temp_2.enable();
   taskTimeRoutine_3.enable();
   taskLED_Error_4.enable();
@@ -2473,7 +2668,7 @@ void Tasks_Enable_Setup()
   taskLED_onEnable_9.enable();
   taskLED_OnDisable_10.enable();
   taskErrorsCodesProcess_11.enable();
-  //taskModbusProcess_12.disable();
+  taskPressureSensorRead_12.enable();
   //taskEEpromProcess_13.disable();
   taskWebServer_Process_15.enable();
   taskDataServer_Process_16.disable();
@@ -2484,11 +2679,11 @@ void Tasks_Enable_Setup()
   taskMQTTRUN_21.enable();
   taskMQTTUpdate_22.enable();
 
-  // if (taskModbusReadData_1.isEnabled())
-  // {
-  //   Serial.println(F("  Enabling task taskModbusReadData_1..."));
-  //   taskModbusReadData_1.setId(1);
-  // }
+  if (taskCurrentSensorRead.isEnabled())
+  {
+    Serial.println(F("  Enabling task taskCurrentSensorRead..."));
+    taskCurrentSensorRead.setId(1);
+  }
 
   if (taskDHT11Temp_2.isEnabled())
   {
@@ -2550,11 +2745,11 @@ void Tasks_Enable_Setup()
     taskErrorsCodesProcess_11.setId(11);
   }
 
-  // if (taskModbusProcess_12.isEnabled())
-  // {
-  //   Serial.println(F("  Enabling task taskModbusProcess_12..."));
-  //   taskModbusProcess_12.setId(12);
-  // }
+  if (taskPressureSensorRead_12.isEnabled())
+  {
+    Serial.println(F("  Enabling task taskPressureSensorRead_12..."));
+    taskPressureSensorRead_12.setId(12);
+  }
 
   // if (taskEEpromProcess_13.isEnabled())
   // {
@@ -2619,7 +2814,7 @@ void TaskScheduler_Setup()
   Serial.println(F("ROUTINE_TaskScheduler_Setup"));
 
   runner.init();
-  //runner.addTask(taskModbusReadData_1);
+  runner.addTask(taskCurrentSensorRead);
   runner.addTask(taskDHT11Temp_2);
   runner.addTask(taskTimeRoutine_3);
   runner.addTask(taskLED_Error_4);
@@ -2630,7 +2825,7 @@ void TaskScheduler_Setup()
   runner.addTask(taskLED_onEnable_9);
   runner.addTask(taskLED_OnDisable_10);
   runner.addTask(taskErrorsCodesProcess_11);
-  //runner.addTask(taskModbusProcess_12);
+  runner.addTask(taskPressureSensorRead_12);
   //runner.addTask(taskEEpromProcess_13);
   //runner.addTask(taskMBcoilReg11_14);
   runner.addTask(taskWebServer_Process_15);

@@ -1,6 +1,7 @@
 #ifndef __THERMOSTAT_INCLUDE
 #define __THERMOSTAT_INCLUDE
 #define NUMSLAVES 20
+#define BME280_ADD 0x76
 
 #include <Arduino.h>
 #include <FS.h>
@@ -200,8 +201,6 @@ void CurrentSensor_Read();
 void DataServer_Process();
 void DataServer_Setup();
 void deepSleep();
-void DHT11_Sensor_Setup();
-void DHT11_TempHumidity();
 void ErrorCodes_Process();
 void ESP_Restart();
 void ESPNowSetup();

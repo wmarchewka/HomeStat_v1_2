@@ -8,7 +8,7 @@
 #define uS_TO_S_FACTOR 1000000 /* Conversion factor for micro seconds to seconds */
 #define FORMAT_SPIFFS_IF_FAILED true
 #define PRINTSCANRESULTS 0
-#define SEALEVELPRESSURE_HPA (1013.25)
+#define SEALEVELPRESSURE_HPA (1026.9)
 
 //#include "sensitive.h"
 #include "MainInclude.h"
@@ -21,7 +21,6 @@
 #include <Adafruit_Sensor.h>
 #include <Arduino.h>
 #include <ArduinoOTA.h>
-#include <DHT.h>
 #include <DNSServer.h>
 #include <EEPROM.h>
 #include <Esp.h>
@@ -46,37 +45,36 @@
 #include <Wire.h>
 
 #ifdef ESP32_WROVER
-#include "WROVER_KIT_LCD.h"               //graphic library used for WROVER
-#include "esp_wrover_pins.h"              // pins specific for WROVER
-#define CHANNEL 3                         // CHANNEL FOR WROVER FOR ESPNOW
-#elif ESP32_DEVKIT                        // 
-#include "TFT_eSPI.h"                     // graphic library used with ST7735 for DEV KIt
-#include "esp_devkit_pins.h"              // pins specific for DEV KIT
-#define CHANNEL 1                         // channel for dev kit
+#include "WROVER_KIT_LCD.h"  //graphic library used for WROVER
+#include "esp_wrover_pins.h" // pins specific for WROVER
+#define CHANNEL 3            // CHANNEL FOR WROVER FOR ESPNOW
+#elif ESP32_DEVKIT           //
+#include "TFT_eSPI.h"        // graphic library used with ST7735 for DEV KIt
+#include "esp_devkit_pins.h" // pins specific for DEV KIT
+#define CHANNEL 1            // channel for dev kit
 #endif
 
 //board specific classes
-#ifdef ESP32_WROVER                       //
-WROVER_KIT_LCD tft;                       //  wrover lcd
-#elif ESP32_DEVKIT                         //
-TFT_eSPI tft = TFT_eSPI();                // dev kit lcd
+#ifdef ESP32_WROVER //
+WROVER_KIT_LCD tft; //  wrover lcd
+#elif ESP32_DEVKIT  //
+TFT_eSPI tft = TFT_eSPI(); // dev kit lcd
 #endif
 
 // classes for both boards
-Scheduler runner;                         //task schedule
-WebServer webServer(HTTP_WEBSERVER_PORT); //webserver
-WebServer DataServer(DATASERVER_PORT);    //wifi server
-RemoteDebug Debug;                        //telnet debug
-WiFiManager wifiManager;                  //wifi manager
-WiFiClient mqttClient;                    // wifi client for use withMQTT
-PubSubClient MQTT_Client(mqttClient);     // MQTT client
-DHT dht;                                  //temperature humidity
-Adafruit_MCP23017 mcp;                    //io expander
-Adafruit_INA219 ina219;                   // current reading
-Adafruit_BME280 bme;                      // I2C
+Scheduler runner;                                 //task schedule
+WebServer webServer(HTTP_WEBSERVER_PORT);         //webserver
+WebServer DataServer(DATASERVER_PORT);            //wifi server
+RemoteDebug Debug;                                //telnet debug
+WiFiManager wifiManager;                          //wifi manager
+WiFiClient mqttClient;                            // wifi client for use withMQTT
+PubSubClient MQTT_Client(mqttClient);             // MQTT client
+Adafruit_MCP23017 mcp;                            //io expander
+Adafruit_INA219 ina219;                           // current reading
+Adafruit_BME280 bme(I2C_DATA_PIN, I2C_CLOCK_PIN); // I2C
 
 Task taskCurrentSensorRead(1000, TASK_FOREVER, &CurrentSensor_Read, NULL);
-Task taskDHT11Temp_2(2000, TASK_FOREVER, &DHT11_TempHumidity, NULL);
+//Task taskDHT11Temp_2(2000, TASK_FOREVER, &DHT11_TempHumidity, NULL);
 Task taskTimeRoutine_3(1000, TASK_FOREVER, &TimeRoutine, NULL);
 Task taskLED_Error_4(15000, TASK_FOREVER, &LED_Error, NULL);
 Task taskWifiCheckStatus_5(1000, TASK_FOREVER, &Wifi_CheckStatus, NULL);
@@ -115,7 +113,7 @@ void PressureSensor_Setup()
   Serial.println("ROUTINE_PressureSensor_Setup");
   bool status;
   Wire.begin(I2C_DATA_PIN, I2C_CLOCK_PIN);
-  status = bme.begin();
+  status = bme.begin(BME280_ADD);
   if (!status)
   {
     if (glb_debug)
@@ -161,14 +159,30 @@ void PressureSensor_Read()
     Serial.print(glb_pressure);
   if (glb_debug)
     Serial.println(" hPa");
+  glb_pressure = glb_pressure * 0.02953;
+  if (glb_debug)
+    Serial.print("  Pressure = ");
+  if (glb_debug)
+    Serial.print(glb_pressure);
+  if (glb_debug)
+    Serial.println(" inHg");
 
   glb_altitude = bme.readAltitude(SEALEVELPRESSURE_HPA);
   if (glb_debug)
     Serial.print("  Approx. Altitude = ");
   if (glb_debug)
     Serial.print(glb_altitude);
+
+  glb_altitude = glb_altitude * 3.28084;
+
   if (glb_debug)
     Serial.println(" m");
+  if (glb_debug)
+    Serial.print("  Approx. Altitude = ");
+  if (glb_debug)
+    Serial.print(glb_altitude);
+  if (glb_debug)
+    Serial.println(" f");
 
   glb_humidity = bme.readHumidity();
   if (glb_debug)
@@ -191,7 +205,7 @@ void CurrentSensor_Read()
 {
 
   Serial.println("ROUTINE_CurrentSensor_Read");
-  
+
   ina219.begin();
 
   glb_debug = 1;
@@ -492,7 +506,7 @@ String macToStr(const uint8_t *mac)
       result += ':';
   }
   return result;
-} 
+}
 //************************************************************************************
 void ESPNowSetup()
 {
@@ -533,7 +547,7 @@ void ESPNowSetup()
   esp_now_register_send_cb(ESPNowOnDataSent);
 #elif ESP32_DEVKIT
   esp_now_register_recv_cb(ESPNowOnDataRecv);
-  
+
 #endif
 }
 //************************************************************************************
@@ -811,10 +825,10 @@ void TelnetServer_ProcessCommand()
   {
     String tReg = lastCmd.substring(12, 2);
     int iReg = tReg.toInt();
-    if (iReg == 1)
-      //taskCurrentSensorRead.enable();
-      if (iReg == 2)
-        taskDHT11Temp_2.enable();
+    // if (iReg == 1)
+    //   taskCurrentSensorRead.enable();
+    // if (iReg == 2)
+    //   taskDHT11Temp_2.enable();
     if (iReg == 3)
       taskTimeRoutine_3.enable();
     if (iReg == 4)
@@ -858,9 +872,9 @@ void TelnetServer_ProcessCommand()
     if (iReg == 1)
       //taskCurrentSensorRead.disable();
       if (iReg == 2)
-        taskDHT11Temp_2.disable();
-    if (iReg == 3)
-      taskTimeRoutine_3.disable();
+        //taskDHT11Temp_2.disable();
+        if (iReg == 3)
+          taskTimeRoutine_3.disable();
     if (iReg == 4)
       taskLED_Error_4.disable();
     if (iReg == 5)
@@ -1035,16 +1049,16 @@ void TelnetServer_ProcessCommand()
     Debug.setSerialEnabled(false); // All messages too send to serial too, and can be see in serial monitor
     Debug.println(F("ok"));
   }
-  else if (lastCmd.startsWith("dht debug on"))
-  {
-    glb_DHT11debugOn = true;
-    Debug.println(glb_DHT11debugOn);
-  }
-  else if (lastCmd.startsWith("dht debug off"))
-  {
-    glb_DHT11debugOn = false;
-    Debug.println(glb_DHT11debugOn);
-  }
+  // else if (lastCmd.startsWith("dht debug on"))
+  // {
+  //   glb_DHT11debugOn = true;
+  //   Debug.println(glb_DHT11debugOn);
+  // }
+  // else if (lastCmd.startsWith("dht debug off"))
+  // {
+  //   glb_DHT11debugOn = false;
+  //   Debug.println(glb_DHT11debugOn);
+  // }
   else if (lastCmd.startsWith("datalog debug on"))
   {
     glb_logDataDebug = true;
@@ -1183,8 +1197,8 @@ void TelnetServer_ProcessCommand()
     Debug.println(F("datalog data off"));
     Debug.println(F("datalog delete"));
     Debug.println(F("datalog size"));
-    Debug.println(F("dht debug on"));
-    Debug.println(F("dht debug off"));
+    // Debug.println(F("dht debug on"));
+    // Debug.println(F("dht debug off"));
     Debug.println(F("errorlog delete"));
     Debug.println(F("errorlog size"));
     Debug.println(F("dataserver count"));
@@ -1308,10 +1322,10 @@ void ErrorCodes_Process()
     Debug.println(F(" Processing Error Codes..."));
   }
 
-  if (debug)
-    Serial.print(F("  DHT error code:"));
-  if (debug)
-    Serial.println(glb_errorDHT);
+  // if (debug)
+  //   Serial.print(F("  DHT error code:"));
+  // if (debug)
+  //   Serial.println(glb_errorDHT);
   if (debug)
     Serial.print(F("  Wifi error code:"));
   if (debug)
@@ -1321,20 +1335,20 @@ void ErrorCodes_Process()
   if (debug)
     Serial.println(glb_errorThermostat);
 
-  if (glb_errorDHT != 0)
-  {
-    glb_BlinkErrorCode = glb_errorDHT;
-  }
-  else if (glb_errorThermostat != 0)
-  {
-    glb_BlinkErrorCode = glb_errorThermostat;
-  }
-  else if (glb_WiFiStatus != 0)
-  {
-    if (debug)
-      Serial.println(glb_WiFiStatus);
-    glb_BlinkErrorCode = glb_WiFiStatus;
-  }
+  // if (glb_errorDHT != 0)
+  // {
+  //   glb_BlinkErrorCode = glb_errorDHT;
+  // }
+  // else if (glb_errorThermostat != 0)
+  // {
+  //   glb_BlinkErrorCode = glb_errorThermostat;
+  // }
+  // else if (glb_WiFiStatus != 0)
+  // {
+  //   if (debug)
+  //     Serial.println(glb_WiFiStatus);
+  //   glb_BlinkErrorCode = glb_WiFiStatus;
+  // }
 
   //mb.Hreg(BLINK_ERROR_CODE_MB_HREG, (word)glb_BlinkErrorCode);
   if (debug)
@@ -1682,66 +1696,66 @@ void Wifi_CheckStatus()
   glb_TaskTimes[5] = endTimeMicros;
 }
 //************************************************************************************
-void DHT11_TempHumidity()
-{
-  Serial.println("ROUTINE_DHT11_TempHumidity");
-  if (glb_DHT11debugOn)
-    Debug.println(F(" Processing temperature and humity sensor..."));
-  static int err1 = 0;
-  static int err2 = 0;
-  int startTimeMicros = micros();
-  int endTimeMicros = 0;
-  int elaspedTimeMicros = 0;
-  int tmpTemperature = 0;
-  int tmpHumidity = 0;
-  String tmpStatus = "";
+// void DHT11_TempHumidity()
+// {
+//   Serial.println("ROUTINE_DHT11_TempHumidity");
+//   if (glb_DHT11debugOn)
+//     Debug.println(F(" Processing temperature and humity sensor..."));
+//   static int err1 = 0;
+//   static int err2 = 0;
+//   int startTimeMicros = micros();
+//   int endTimeMicros = 0;
+//   int elaspedTimeMicros = 0;
+//   int tmpTemperature = 0;
+//   int tmpHumidity = 0;
+//   String tmpStatus = "";
 
-  tmpHumidity = dht.getHumidity();
-  tmpTemperature = dht.getTemperature();
-  tmpTemperature = dht.toFahrenheit(tmpTemperature);
-  tmpStatus = dht.getStatusString();
+//   tmpHumidity = dht.getHumidity();
+//   tmpTemperature = dht.getTemperature();
+//   tmpTemperature = dht.toFahrenheit(tmpTemperature);
+//   tmpStatus = dht.getStatusString();
 
-  if (glb_DHT11debugOn)
-    Debug.println(tmpStatus);
+//   if (glb_DHT11debugOn)
+//     Debug.println(tmpStatus);
 
-  if (tmpStatus == (F("OK")))
-  {
-    glb_temperature = tmpTemperature;
-    glb_humidity = tmpHumidity;
-    glb_dhtStatusError = tmpStatus;
+//   if (tmpStatus == (F("OK")))
+//   {
+//     glb_temperature = tmpTemperature;
+//     glb_humidity = tmpHumidity;
+//     glb_dhtStatusError = tmpStatus;
 
-    //mb.Hreg(TEMPERATURE_SENSOR_MB_HREG, (word)(glb_humidity));
-    //mb.Hreg(HUMIDITY_SENSOR_MB_HREG, (word)(glb_temperature));
-    //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 0);
-    glb_errorDHT = 0;
-  }
+//     //mb.Hreg(TEMPERATURE_SENSOR_MB_HREG, (word)(glb_humidity));
+//     //mb.Hreg(HUMIDITY_SENSOR_MB_HREG, (word)(glb_temperature));
+//     //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 0);
+//     glb_errorDHT = 0;
+//   }
 
-  if (tmpStatus == (F("TIMEOUT")))
-  {
-    //FileSystem_ErrorLogSave("DHT 11 timeout error...", glb_errorLogPath);
-    glb_errorDHT = 7;
-    err1++;
-    //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 1);
-  }
-  //mb.Hreg(DHT_STATUS_ERR_TIMEOUT_COUNTER_MB_HREG, (word)err1);
+//   if (tmpStatus == (F("TIMEOUT")))
+//   {
+//     //FileSystem_ErrorLogSave("DHT 11 timeout error...", glb_errorLogPath);
+//     glb_errorDHT = 7;
+//     err1++;
+//     //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 1);
+//   }
+//   //mb.Hreg(DHT_STATUS_ERR_TIMEOUT_COUNTER_MB_HREG, (word)err1);
 
-  if (tmpStatus == (F("ERROR")))
-  {
-    //FileSystem_ErrorLogSave("DHT 11 Checksum Error...", glb_errorLogPath);
-    glb_errorDHT = 8;
-    err2++;
-    //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 2);
-  }
+//   if (tmpStatus == (F("ERROR")))
+//   {
+//     //FileSystem_ErrorLogSave("DHT 11 Checksum Error...", glb_errorLogPath);
+//     glb_errorDHT = 8;
+//     err2++;
+//     //mb.Hreg(DHT_STATUS_ERR_MB_HREG, 2);
+//   }
 
-  //mb.Hreg(DHT_STATUS_ERR_CHECKSUM_COUNTER_MB_HREG, (word)err2);
-  if (glb_DHT11debugOn)
-    Debug.println(glb_dhtStatusError);
+//   //mb.Hreg(DHT_STATUS_ERR_CHECKSUM_COUNTER_MB_HREG, (word)err2);
+//   if (glb_DHT11debugOn)
+//     Debug.println(glb_dhtStatusError);
 
-  endTimeMicros = micros();
-  elaspedTimeMicros = endTimeMicros - startTimeMicros;
-  //mb.Hreg(DHT_ROUTINE_TIME_MB_HREG, (word)(elaspedTimeMicros));
-  glb_TaskTimes[2] = elaspedTimeMicros;
-}
+//   endTimeMicros = micros();
+//   elaspedTimeMicros = endTimeMicros - startTimeMicros;
+//   //mb.Hreg(DHT_ROUTINE_TIME_MB_HREG, (word)(elaspedTimeMicros));
+//   glb_TaskTimes[2] = elaspedTimeMicros;
+// }
 
 //************************************************************************************
 void loop()
@@ -2261,7 +2275,6 @@ void setup()
   I2C_Setup();
   IO_Pins_Setup();
   selftestMcp();
-  DHT11_Sensor_Setup();
   OTA_Setup();
   Thermostat_ControlDisable();
   TaskScheduler_Setup();
@@ -2358,6 +2371,7 @@ void LCD_Update()
   int endTimeMicros = 0;
   uint16_t textcolor = 0;
   uint16_t backgroundcolor = 0;
+  char str_temp[8];
 
 #ifdef ESP32_WROVER
   textcolor = WROVER_WHITE;
@@ -2374,14 +2388,20 @@ void LCD_Update()
   char line5[30] = "";
   char line6[30] = "";
   char line7[30] = "";
+  char line8[30] = "";
 
-  sprintf(line1, "Temp    :%02d", glb_temperature);
-  sprintf(line2, "Humidity:%02d", glb_humidity);
+  dtostrf(glb_temperature, 4, 2, str_temp);
+  sprintf(line1, "Temp    :%s deg F", str_temp);
+  dtostrf(glb_humidity, 4, 2, str_temp);
+  sprintf(line2, "Humidity:%s %%", str_temp);
   sprintf(line3, "Pkts    :%06d", glb_dataServerCounter);
-  sprintf(line4, "Status  :%s", glb_dhtStatusError.c_str());
+  dtostrf(glb_batteryVoltage, 4, 2, str_temp);
+  sprintf(line4, "Voltage :%s vdc", str_temp);
   sprintf(line5, "Time    :%s", glb_lcdTime);
   sprintf(line6, "Free mem:%07d", ESP.getFreeHeap());
   sprintf(line7, "IP Addr :%s", glb_ipAddress.toString().c_str());
+  dtostrf(glb_current, 4, 2, str_temp);
+  sprintf(line8, "Current :%s ma", str_temp);
 
   LCD_DrawText(0, 0, line1, textcolor, backgroundcolor);
   LCD_DrawText(0, 10, line2, textcolor, backgroundcolor);
@@ -2390,6 +2410,7 @@ void LCD_Update()
   LCD_DrawText(0, 40, line5, textcolor, backgroundcolor);
   LCD_DrawText(0, 50, line6, textcolor, backgroundcolor);
   LCD_DrawText(0, 60, line7, textcolor, backgroundcolor);
+  LCD_DrawText(0, 70, line8, textcolor, backgroundcolor);
 
   endTimeMicros = micros();
   endTimeMicros = endTimeMicros - startTimeMicros;
@@ -2490,16 +2511,16 @@ void I2C_Setup()
   Serial.println(F("ROUTINE_I2C_Setup"));
 
 #ifdef ESP32_WROVER
-// i2c mode
-// used to override clock and data pins
-//mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
+  // i2c mode
+  // used to override clock and data pins
+  mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
 #elif ESP32_DEVKIT
   Serial.print("  I2C Data Pin : ");
   Serial.println(I2C_DATA_PIN);
   Serial.print("  I2C CLock Pin : ");
   Serial.println(I2C_CLOCK_PIN);
   //Wire.begin(I2C_DATA_PIN, I2C_CLOCK_PIN);
-  mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
+  //mcp.begin(0, I2C_DATA_PIN, I2C_CLOCK_PIN);
   mcp.begin(0);
 #endif
 }
@@ -2566,12 +2587,6 @@ void IO_ControlPins()
   endTimeMicros = micros();
   endTimeMicros = endTimeMicros - startTimeMicros;
   glb_TaskTimes[7] = endTimeMicros;
-}
-//************************************************************************************
-void DHT11_Sensor_Setup()
-{
-  Serial.println(F("ROUTINE_DHT11_Sensor_Setup"));
-  dht.setup(DHT11_DATA_PIN);
 }
 //************************************************************************************
 void OTA_Setup()
@@ -2658,7 +2673,7 @@ void Tasks_Enable_Setup()
   Serial.println(F("ROUTINE_Tasks_Enable_Setup"));
   Serial.println(F("  Enabling Tasks..."));
   taskCurrentSensorRead.enable();
-  taskDHT11Temp_2.enable();
+  //taskDHT11Temp_2.disable();
   taskTimeRoutine_3.enable();
   taskLED_Error_4.enable();
   taskWifiCheckStatus_5.disable();
@@ -2685,11 +2700,11 @@ void Tasks_Enable_Setup()
     taskCurrentSensorRead.setId(1);
   }
 
-  if (taskDHT11Temp_2.isEnabled())
-  {
-    Serial.println(F("  Enabling task taskDHT11Temp_2..."));
-    taskDHT11Temp_2.setId(2);
-  }
+  // if (taskDHT11Temp_2.isEnabled())
+  // {
+  //   Serial.println(F("  Enabling task taskDHT11Temp_2..."));
+  //   taskDHT11Temp_2.setId(2);
+  // }
 
   if (taskTimeRoutine_3.isEnabled())
   {
@@ -2815,7 +2830,7 @@ void TaskScheduler_Setup()
 
   runner.init();
   runner.addTask(taskCurrentSensorRead);
-  runner.addTask(taskDHT11Temp_2);
+  //runner.addTask(taskDHT11Temp_2);
   runner.addTask(taskTimeRoutine_3);
   runner.addTask(taskLED_Error_4);
   runner.addTask(taskWifiCheckStatus_5);
@@ -3414,9 +3429,9 @@ void FileSystem_DebugDataSave(String data)
       webData += (F("LightSensor="));
       webData += String(glb_lightSensor);
       webData += (F("\n"));
-      webData += (F("Temp&Humidity Status="));
-      webData += String(glb_dhtStatusError);
-      webData += (F("\n"));
+      // webData += (F("Temp&Humidity Status="));
+      // webData += String(glb_dhtStatusError);
+      // webData += (F("\n"));
       webData += (F("Humidity="));
       webData += String(glb_humidity);
       webData += (F("\n"));

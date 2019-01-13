@@ -104,7 +104,7 @@ struct mqttDataStruct
 mqttDataStruct mqttData[100];
 
 bool glb_coolcall = false;
-bool glb_debug = true;
+bool glb_debug = false;
 bool glb_DHT11debugOn = 1;
 bool glb_fancall = false;
 bool glb_heatcall = false;

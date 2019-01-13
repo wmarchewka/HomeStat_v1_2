@@ -195,8 +195,10 @@ void PressureSensor_Read()
   if (glb_debug)
     Serial.println();
 
-  Serial.print("  Temp End Time : ");
-  Serial.println(millis() - glb_StartTime);
+  if (glb_debug)
+    Serial.print("  Temp End Time : ");
+  if (glb_debug)
+    Serial.println(millis() - glb_StartTime);
 
   //getCurrent();
 }
@@ -208,7 +210,7 @@ void CurrentSensor_Read()
 
   ina219.begin();
 
-  glb_debug = 1;
+  glb_debug = 0;
   glb_isrFlag = false;
   isrCounter++;
   if (isrCounter > 299)
@@ -271,7 +273,8 @@ void CurrentSensor_Read()
   if (glb_debug)
     Serial.println("");
 
-  Serial.print("  Current End Time : ");
+  if (glb_debug)
+    Serial.print("  Current End Time : ");
   Serial.println(millis() - glb_StartTime);
 }
 //************************************************************************************
@@ -630,6 +633,7 @@ void MQTT_Publish()
     }
     else
     {
+      Serial.println("  Connected. Publishing Topic...");
       MQTT_Client.publish("outTopic", msg);
     }
   }
@@ -1761,22 +1765,22 @@ void Wifi_CheckStatus()
 void loop()
 {
   runner.execute();
-#ifdef ESP32_WROVER
-  WROVER_KIT_LCD tft; //lcd
-  //TODO: need to put this into the scheduler
-  ESPNowScanForSlaves();
-  // If Slave is found, it would be populate in `slave` variable
-  // We will check if `slave` is defined and then we proceed further
-  if (SlaveCnt > 0)
-  { // check if slave channel is defined
-    // `slave` is defined
-    // Add slave as peer if it has not been added already
-    ESPNowManageSlave();
-    // pair success or already paired
-    // Send data to device
-    ESPNowSendData();
-  }
-#endif
+// #ifdef ESP32_WROVER
+//   WROVER_KIT_LCD tft; //lcd
+//   //TODO: need to put this into the scheduler
+//   ESPNowScanForSlaves();
+//   // If Slave is found, it would be populate in `slave` variable
+//   // We will check if `slave` is defined and then we proceed further
+//   if (SlaveCnt > 0)
+//   { // check if slave channel is defined
+//     // `slave` is defined
+//     // Add slave as peer if it has not been added already
+//     ESPNowManageSlave();
+//     // pair success or already paired
+//     // Send data to device
+//     ESPNowSendData();
+//   }
+// #endif
 }
 //************************************************************************************
 int BootDevice_Detect(void)
@@ -2259,13 +2263,12 @@ void setup()
 
   MQTT_Data_Setup();
   Serial.println();
-  delay(1000);
   FileSystem_DeleteFile(glb_errorLogPath);
   Serial.println(getFreeHeap());
   //FileSystem_Format();
   FileSystem_ErrorLogCreate();
   ThermostatMode_Setup();
-  //WiFiManager_Setup();
+  WiFiManager_Setup();
   TimeSync_Setup();
   TelnetServer_Setup();
   LCD_Setup();
@@ -2284,7 +2287,7 @@ void setup()
   StartupPrinting_Setup();
   Tasks_Enable_Setup();
   mDNS_Setup();
-  ESPNowSetup();
+  //ESPNowSetup();
   PressureSensor_Setup();
 }
 //************************************************************************************
@@ -2371,7 +2374,7 @@ void LCD_Update()
   int endTimeMicros = 0;
   uint16_t textcolor = 0;
   uint16_t backgroundcolor = 0;
-  char str_temp[8];
+  char str_temp[12];
 
 #ifdef ESP32_WROVER
   textcolor = WROVER_WHITE;
@@ -2390,18 +2393,18 @@ void LCD_Update()
   char line7[30] = "";
   char line8[30] = "";
 
-  dtostrf(glb_temperature, 4, 2, str_temp);
+  dtostrf(glb_temperature, 6, 2, str_temp);
   sprintf(line1, "Temp    :%s deg F", str_temp);
-  dtostrf(glb_humidity, 4, 2, str_temp);
+  dtostrf(glb_humidity, 6, 2, str_temp);
   sprintf(line2, "Humidity:%s %%", str_temp);
   sprintf(line3, "Pkts    :%06d", glb_dataServerCounter);
-  dtostrf(glb_batteryVoltage, 4, 2, str_temp);
+  dtostrf(glb_batteryVoltage, 6, 2, str_temp);
   sprintf(line4, "Voltage :%s vdc", str_temp);
   sprintf(line5, "Time    :%s", glb_lcdTime);
   sprintf(line6, "Free mem:%07d", ESP.getFreeHeap());
   sprintf(line7, "IP Addr :%s", glb_ipAddress.toString().c_str());
-  dtostrf(glb_current, 4, 2, str_temp);
-  sprintf(line8, "Current :%s ma", str_temp);
+  dtostrf(glb_current, 7, 2, str_temp);
+  sprintf(line8, "Current :%s ma   ", str_temp);
 
   LCD_DrawText(0, 0, line1, textcolor, backgroundcolor);
   LCD_DrawText(0, 10, line2, textcolor, backgroundcolor);
